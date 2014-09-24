@@ -8,21 +8,21 @@ import (
 	"time"
 )
 
-func appendOut(level int, enable bool, logType, logFile string) error {
+func appendOut(level int, levelStr string, enable bool, logType, logFile string) error {
 	if !enable {
 		return nil
 	}
 	var o *out
 	if logType == "console" {
-		o = &out{level, levelMap[level], os.Stdout}
+		o = &out{level, levelStr, os.Stdout}
 	} else {
 		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return err
 		}
-		o = &out{level, levelMap[level], file}
+		o = &out{level, levelStr, file}
 	}
-	log.outs = append(log.outs, o)
+	log.outs[level] = o
 	return nil
 }
 

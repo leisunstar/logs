@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
-	"sync"
 )
 
 const (
@@ -26,7 +25,13 @@ var (
 		levelWarning: "WARNING",
 		levelError:   "ERROR  ",
 	}
+	logsChan = make(chan *logChan, 10000)
 )
+
+type logChan struct {
+	level int
+	msg []byte
+}
 
 type out struct {
 	level    int
@@ -35,18 +40,22 @@ type out struct {
 }
 
 type logger struct {
-	mu   *sync.Mutex
-	outs []*out
+	outs map[int]*out
 }
 
-func (l *logger) write(level int, format string, a ...interface{}) {
-	l.mu.Lock()
-	for _, o := range log.outs {
-		if o.level == level {
-			o.out.Write(fmtMsg(o.levelStr, fmt.Sprintf(format, a...)))
-		}
+func (l *logger) put(level int, format string, a ...interface{}) {
+	o, ok := l.outs[level]
+	if ok {
+		logsChan <- &logChan{level: level, msg: fmtMsg(o.levelStr, fmt.Sprintf(format, a...))}
 	}
-	l.mu.Unlock()
+}
+
+func (l *logger) write() {
+	var ch *logChan
+	for {
+		ch = <- logsChan
+		l.outs[ch.level].out.Write(ch.msg)
+	}
 }
 
 // Init
@@ -75,7 +84,7 @@ func Init(confFileName string) error {
 	case "error":
 		level = levelError
 	}
-	log = &logger{mu: &sync.Mutex{}, outs: make([]*out, 0)}
+	log = &logger{outs: make(map[int]*out, 0)}
 	enableMap := map[int]bool{
 		levelDebug:   c.DebugEnable,
 		levelInfo:    c.InfoEnable,
@@ -95,25 +104,26 @@ func Init(confFileName string) error {
 		levelError:   c.ErrorOut,
 	}
 	for i := level; i < 4; i++ {
-		if appendOut(i, enableMap[i], typeMap[i], outMap[i]) != nil {
+		if appendOut(i, levelMap[i], enableMap[i], typeMap[i], outMap[i]) != nil {
 			return err
 		}
 	}
+	go log.write()
 	return nil
 }
 
 func Debug(format string, a ...interface{}) {
-	log.write(levelDebug, format, a...)
+	log.put(levelDebug, format, a...)
 }
 
 func Info(format string, a ...interface{}) {
-	log.write(levelInfo, format, a...)
+	log.put(levelInfo, format, a...)
 }
 
 func Warning(format string, a ...interface{}) {
-	log.write(levelWarning, format, a...)
+	log.put(levelWarning, format, a...)
 }
 
 func Error(format string, a ...interface{}) {
-	log.write(levelError, format, a...)
+	log.put(levelError, format, a...)
 }
