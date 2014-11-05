@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+	"time"
 )
 
 const (
@@ -51,10 +52,10 @@ func (l *logger) put(level int, format string, a ...interface{}) {
 }
 
 func (l *logger) write() {
-	var ch *logChan
+	var chLog *logChan
 	for {
-		ch = <- logsChan
-		l.outs[ch.level].out.Write(ch.msg)
+		chLog = <- logsChan
+		l.outs[chLog.level].out.Write(chLog.msg)
 	}
 }
 
@@ -110,6 +111,10 @@ func Init(confFileName string) error {
 	}
 	go log.write()
 	return nil
+}
+
+func Close() {
+	time.Sleep(1*time.Second)
 }
 
 func Debug(format string, a ...interface{}) {
