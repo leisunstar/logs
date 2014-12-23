@@ -31,7 +31,7 @@ var (
 
 type logChan struct {
 	level int
-	msg []byte
+	msg   []byte
 }
 
 type out struct {
@@ -54,7 +54,7 @@ func (l *logger) put(level int, format string, a ...interface{}) {
 func (l *logger) write() {
 	var chLog *logChan
 	for {
-		chLog = <- logsChan
+		chLog = <-logsChan
 		l.outs[chLog.level].out.Write(chLog.msg)
 	}
 }
@@ -114,7 +114,7 @@ func Init(confFileName string) error {
 }
 
 func Close() {
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 }
 
 func Debug(format string, a ...interface{}) {
