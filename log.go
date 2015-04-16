@@ -44,10 +44,10 @@ type logger struct {
 	outs map[int]*out
 }
 
-func (l *logger) put(level int, format string, a ...interface{}) {
+func (l *logger) put(level int, str string) {
 	o, ok := l.outs[level]
 	if ok {
-		logsChan <- &logChan{level: level, msg: fmtMsg(o.levelStr, fmt.Sprintf(format, a...))}
+		logsChan <- &logChan{level: level, msg: fmtMsg(o.levelStr, str)}
 	}
 }
 
@@ -118,17 +118,17 @@ func Close() {
 }
 
 func Debug(format string, a ...interface{}) {
-	log.put(levelDebug, format, a...)
+    log.put(levelDebug, Green(fmt.Sprintf(format, a...)))
 }
 
 func Info(format string, a ...interface{}) {
-	log.put(levelInfo, format, a...)
+    log.put(levelInfo, White(fmt.Sprintf(format, a...)))
 }
 
 func Warning(format string, a ...interface{}) {
-	log.put(levelWarning, format, a...)
+    log.put(levelWarning, Yellow(fmt.Sprintf(format, a...)))
 }
 
 func Error(format string, a ...interface{}) {
-	log.put(levelError, format, a...)
+    log.put(levelError, Red(fmt.Sprintf(format, a...)))
 }
